@@ -1,7 +1,7 @@
 import logging
 from data_provider.data_factory import data_provider
 from exp.exp_basic import Exp_Basic
-from models import Informer, Autoformer, Transformer, Reformer
+from models import Informer, Autoformer, Transformer, Reformer, DLinear, PatchTST
 from utils.tools import EarlyStopping, adjust_learning_rate, visual
 from utils.metrics import metric
 
@@ -33,8 +33,8 @@ class Exp_Main(Exp_Basic):
             'Transformer': Transformer,
             'Informer': Informer,
             'Reformer': Reformer,
-            # 'DLinear': DLinear,
-            # 'PatchTST': PatchTST,
+            'DLinear': DLinear,
+            'PatchTST': PatchTST,
         }
         model = model_dict[self.args.model].Model(self.args).float()
 
@@ -82,7 +82,7 @@ class Exp_Main(Exp_Basic):
 
         return outputs, batch_y
 
-    # 模型验证，不更新提督，计算loss
+    # 模型验证，不更新梯度，计算loss
     def vali(self, vali_data, vali_loader, criterion):
         total_loss = []
         self.model.eval()
@@ -133,35 +133,48 @@ class Exp_Main(Exp_Basic):
 
             self.model.train()
             epoch_time = time.time()
-            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(train_loader):
-                iter_count += 1
-                model_optim.zero_grad()
-                batch_x = batch_x.float().to(self.device)
+            with tqdm(train_loader, desc=f'Training {epoch + 1}/{self.args.train_epochs}', unit='batch') as pbar:
+                for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(pbar):
+                    iter_count += 1
+                    model_optim.zero_grad()
+                    batch_x = batch_x.float().to(self.device)
 
-                batch_y = batch_y.float().to(self.device)
-                batch_x_mark = batch_x_mark.float().to(self.device)
-                batch_y_mark = batch_y_mark.float().to(self.device)
+                    batch_y = batch_y.float().to(self.device)
+                    batch_x_mark = batch_x_mark.float().to(self.device)
+                    batch_y_mark = batch_y_mark.float().to(self.device)
 
-                outputs, batch_y = self._predict(batch_x, batch_y, batch_x_mark, batch_y_mark)
+                    outputs, batch_y = self._predict(batch_x, batch_y, batch_x_mark, batch_y_mark)
 
-                loss = criterion(outputs, batch_y)
-                train_loss.append(loss.item())
+                    loss = criterion(outputs, batch_y)
+                    train_loss.append(loss.item())
 
-                if (i + 1) % 100 == 0:
-                    print("\titers: {0}, epoch: {1} | loss: {2:.7f}".format(i + 1, epoch + 1, loss.item()))
-                    speed = (time.time() - time_now) / iter_count
-                    left_time = speed * ((self.args.train_epochs - epoch) * train_steps - i)
-                    print('\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))
-                    iter_count = 0
-                    time_now = time.time()
+                    # 计算速度和剩余时间
+                    elapsed = time.time() - time_now
+                    speed = elapsed / iter_count if iter_count > 0 else 0
+                    batches_left = (self.args.train_epochs - epoch) * train_steps - i
+                    left_time = speed * batches_left if speed > 0 else 0
 
-                if self.args.use_amp:
-                    scaler.scale(loss).backward()
-                    scaler.step(model_optim)
-                    scaler.update()
-                else:
-                    loss.backward()
-                    model_optim.step()
+                    # 将所有信息集成到set_postfix
+                    pbar.set_postfix({
+                        "loss": f"{loss.item():.4f}",
+                        "avg_loss": f"{np.mean(train_loss):.4f}",
+                        "iter": f"{i+1}/{train_steps}",
+                        "speed": f"{speed:.4f}s/iter",
+                        "eta": f"{left_time:.1f}s"
+                    })
+                    
+                    pbar.update(1)
+                    if (i + 1) % 100 == 0:
+                        iter_count = 0
+                        time_now = time.time()
+
+                    if self.args.use_amp:
+                        scaler.scale(loss).backward()
+                        scaler.step(model_optim)
+                        scaler.update()
+                    else:
+                        loss.backward()
+                        model_optim.step()
 
             print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
             train_loss = np.average(train_loss)
