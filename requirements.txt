@@ -4,3 +4,4 @@ torchvision
 numpy
 matplotlib
 reformer_pytorch
+packaging
