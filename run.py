@@ -58,6 +58,18 @@ def main():
     parser.add_argument('--activation', type=str, default='gelu', help='activation')
     parser.add_argument('--output_attention', action='store_true', help='whether to output attention in encoder')
     parser.add_argument('--do_predict', action='store_true', help='whether to predict unseen future data')
+    # PathTST
+    parser.add_argument('--fc_dropout', type=float, default=0.05, help='fully connected dropout')
+    parser.add_argument('--head_dropout', type=float, default=0.0, help='head dropout')
+    parser.add_argument('--patch_len', type=int, default=16, help='patch length')
+    parser.add_argument('--stride', type=int, default=8, help='stride')
+    parser.add_argument('--padding_patch', default='end', help='None: None; end: padding on the end')
+    parser.add_argument('--revin', type=int, default=1, help='RevIN; True 1 False 0')
+    parser.add_argument('--affine', type=int, default=0, help='RevIN-affine; True 1 False 0')
+    parser.add_argument('--subtract_last', type=int, default=0, help='0: subtract mean; 1: subtract last')
+    parser.add_argument('--decomposition', type=int, default=0, help='decomposition; True 1 False 0')
+    parser.add_argument('--kernel_size', type=int, default=25, help='decomposition-kernel')
+    parser.add_argument('--individual', type=int, default=0, help='individual head; True 1 False 0')
 
     # optimization
     parser.add_argument('--num_workers', type=int, default=10, help='data loader num workers')
