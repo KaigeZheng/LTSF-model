@@ -1,13 +1,28 @@
 #!/bin/bash
 
+overall_start_time=$(date +%s)
+echo "============================================="
+echo "Start Running All Models: $(date '+%Y-%m-%d %H:%M:%S')"
+echo "============================================="
+
 run_script() {
     script_path="$1"
-    echo "Running $script_path ..."
+    echo
+    echo ">>> Running $script_path"
+    start_time=$(date +%s)
+    echo "Start Time: $(date '+%Y-%m-%d %H:%M:%S')"
+
     if bash "$script_path"; then
-        echo "[SUCCESS] $script_path completed."
+        status="SUCCESS"
     else
-        echo "[FAILED] $script_path encountered an error."
+        status="FAILED"
     fi
+
+    end_time=$(date +%s)
+    duration=$((end_time - start_time))
+    echo "End Time  : $(date '+%Y-%m-%d %H:%M:%S')"
+    echo "Duration  : ${duration} seconds"
+    echo "[${status}] $script_path"
     echo "---------------------------------------------"
 }
 
@@ -39,4 +54,11 @@ run_script ./scripts/Traffic_script/Transformer.sh
 run_script ./scripts/Traffic_script/DLinear.sh
 run_script ./scripts/Traffic_script/PatchTST.sh
 
-echo "All scripts attempted. Check above for success/failure."
+overall_end_time=$(date +%s)
+total_duration=$((overall_end_time - overall_start_time))
+
+echo
+echo "============================================="
+echo "Finished All Scripts: $(date '+%Y-%m-%d %H:%M:%S')"
+echo "Total Time Used: ${total_duration} seconds"
+echo "============================================="
