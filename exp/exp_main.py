@@ -152,16 +152,9 @@ class Exp_Main(Exp_Basic):
                     # 计算速度和剩余时间
                     elapsed = time.time() - time_now
                     speed = elapsed / iter_count if iter_count > 0 else 0
-                    batches_left = (self.args.train_epochs - epoch) * train_steps - i
-                    left_time = speed * batches_left if speed > 0 else 0
 
-                    # 将所有信息集成到set_postfix
                     pbar.set_postfix({
-                        "loss": f"{loss.item():.4f}",
-                        "avg_loss": f"{np.mean(train_loss):.4f}",
-                        "iter": f"{i+1}/{train_steps}",
-                        "speed": f"{speed:.4f}s/iter",
-                        "eta": f"{left_time:.1f}s"
+                        "loss": f"{loss.item():.4f}"
                     })
                     
                     pbar.update(1)
@@ -246,16 +239,17 @@ class Exp_Main(Exp_Basic):
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
 
-        mae, mse, rmse, mape, mspe = metric(preds, trues)
-        print('mse:{}, mae:{}'.format(mse, mae))
+        mae, mse, rmse, mape, mspe, r2 = metric(preds, trues)
+        print('mse:{}, mae:{}, rmse:{}, mape:{}, mspe:{}, r2:{}'.format(mse, mae, rmse, mape, mspe, r2))
         f = open("result.txt", 'a')
         f.write(setting + "  \n")
-        f.write('mse:{}, mae:{}'.format(mse, mae))
+        f.write('mse:{}, mae:{}, rmse:{}, mape:{}, mspe:{}, r2:{}'\
+                .format(mse, mae, rmse, mape, mspe, r2))
         f.write('\n')
         f.write('\n')
         f.close()
 
-        np.save(folder_path + 'metrics.npy', np.array([mae, mse, rmse, mape, mspe]))
+        np.save(folder_path + 'metrics.npy', np.array([mae, mse, rmse, mape, mspe, r2]))
         np.save(folder_path + 'pred.npy', preds)
         np.save(folder_path + 'true.npy', trues)
 
