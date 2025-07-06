@@ -8,3 +8,7 @@ We plan to use a modern PyTorch framework in this repository to reproduce long-t
 # pip install -r requirements.txt
 sh ./run.sh
 ```
+
+## Experiment Results
+
+![Experiment Results](test_results/image.png)
